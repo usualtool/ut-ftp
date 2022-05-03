@@ -1,0 +1,18 @@
+{
+    "name":             "usualtool/ut-ftp",
+    "description":      "UT framework extension:Ftp.",
+    "keywords":         ["ut-ftp", "usualtool", "UT Framework"],
+    "homepage":         "http://frame.usualtool.com",
+    "license": "Apache-2.0",
+    "authors": [{
+        "name":         "HuangDou",
+        "email":        "292951110@qq.com"
+    }],
+    "require": {
+    },
+    "autoload": {
+        "psr-4": {
+            "usualtool\\Ftp\\": "src"
+        }
+    }
+}
