@@ -1,13 +1,21 @@
 <?php
 namespace usualtool\Ftp;
 class Ftp{
-    function __construct(){
-        include 'Config.php';
-        $this->server=$config["server"];
-        $this->port=$config["port"];
-        $this->username=$config["username"];
-        $this->password=$config["password"];
-        $this->pasv=$config["pasv"];
+    function __construct($server='',$port='',$username='',$password='',$pasv=''){
+        if(empty($server)):
+            include 'Config.php';
+            $this->server=$config["server"];
+            $this->port=$config["port"];
+            $this->username=$config["username"];
+            $this->password=$config["password"];
+            $this->pasv=$config["pasv"];
+        else:
+            $this->server=$server;
+            $this->port=$port;
+            $this->username=$username;
+            $this->password=$password;
+            $this->pasv=$pasv;
+        endif;
         $this->ftp=@ftp_connect($this->server,$this->port) or die("FTP CONNECT ERROR");
         @ftp_login($this->ftp,$this->username,$this->password) or die("FTP LOGIN ERROR");
     }
