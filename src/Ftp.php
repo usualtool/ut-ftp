@@ -2,95 +2,87 @@
 namespace usualtool\Ftp;
 class Ftp{
     function __construct(){
-        include 'config.php';
-        $this->server=$config["sever"];
+        include 'Config.php';
+        $this->server=$config["server"];
         $this->port=$config["port"];
         $this->username=$config["username"];
         $this->password=$config["password"];
         $this->pasv=$config["pasv"];
-        $this->ftp=@ftp_connect($this->server,$this->port) or die("FTP ERROR");
+        $this->ftp=@ftp_connect($this->server,$this->port) or die("FTP CONNECT ERROR");
         @ftp_login($this->ftp,$this->username,$this->password) or die("FTP LOGIN ERROR");
-        @ftp_pasv($this->ftp,$this->pasv);
     }
     /**
-    * 当前位置
+    * FTP当前位置
     */
     function Cur(){
-        ftp_pwd($this->ftp);
+        return ftp_pwd($this->ftp);
     }
     /**
-    * 返回父目录
+    * 返回FTP父目录
     */
     function Par(){
-        ftp_cdup($this->ftp);
+        return ftp_cdup($this->ftp);
     }
     /**
-    * 列表
+    * FTP文件列表
     */
-    function List($path){
-        ftp_nlist($this->ftp,$path);
+    function List($path='/'){
+        $data=ftp_nlist($this->ftp,$path);
+        return $data;
     }
     /**
-    * 上传
+    * FTP详细列表
     */
-    function Upload($path,$newpath,$type=true){
-        if($type) $this->MakeDir($newpath);
-        $this->res = @ftp_put($this->ftp,$newpath,$path,FTP_BINARY);
-        if(!$this->res):
+    function RawList($path='/'){
+        $data=ftp_rawlist($this->ftp,$path);
+        return $data;
+    }
+    /**
+    * 当前（本地）上传到FTP
+    */
+    function Upload($local,$server){
+        $this->MakeDir(dirname($server));
+        if (!file_exists($local)){
+             return false;
+        }
+        $result = ftp_put($this->ftp,$server,$local,FTP_BINARY);//FTP_ASCII
+        $this->Close();
+        return (!$result) ? false : true;
+    }
+    /**
+    * FTP下载到本地
+    */
+    function Download($local,$server){
+        $result = ftp_get($this->ftp,$local,$server,FTP_BINARY);
+        $this->Close();
+        return $result;
+    }
+    /**
+    * FTP重命名或移动
+    */
+    function Rename($old,$new){ 
+        $this->MakeDir($new); 
+        $res = @ftp_rename($this->ftp,$old,$new);
+        $this->Close();
+        if(!$res):
             return false;
         else:
             return true;
         endif;
     }
     /**
-    * 下载
+    * FTP删除文件
     */
-    function Download($path,$newpath,$type=true){
-        if($type) $this->MakeDir($newpath);
-        $this->res = @ftp_get($this->ftp,$newpath,$path,FTP_BINARY);
-        if(!$this->res):
+    function Del($file) { 
+        $res = @ftp_delete($this->ftp,$file); 
+        if(!$res):
             return false;
         else:
             return true;
         endif;
     }
     /**
-    * 移动
-    */
-    function MoveFile($path,$newpath,$type=true) { 
-        if($type) $this->dir_mkdirs($newpath); 
-        $this->res = @ftp_rename($this->ftp,$path,$newpath); 
-        if(!$this->res):
-            return false;
-        else:
-            return true;
-        endif;
-    } 
-    /**
-    * 复制
-    */
-    function CopyFile($path,$newpath,$type=true) { 
-        $downpath = "c:/tmp.dat"; 
-        $this->res = @ftp_get($this->ftp,$downpath,$path,FTP_BINARY);
-        if(!$this->res):
-            $this->up_file($downpath,$newpath,$type); 
-        else:
-            return true;
-        endif;
-    } 
-    /**
-    * 删除
-    */
-    function DelFile($path) { 
-        $this->res = @ftp_delete($this->ftp,$path); 
-        if(!$this->res):
-            return false;
-        else:
-            return true;
-        endif;
-    }
-    /**
-    * 创建目录
+    * FTP创建目录
     */
     function MakeDir($path){
         $path_arr = explode('/',$path);
@@ -109,6 +101,17 @@ class Ftp{
         for($i=1;$i=$path_div;$i++){
             @ftp_cdup($this->ftp);
         }
+    }
+    /**
+    * FTP文件大小
+    */
+    function Size($file) { 
+        $res = @ftp_size($this->ftp,$file); 
+        if(!$res):
+            return false;
+        else:
+            return $res;
+        endif;
     }
     /**
     * 关闭连接
