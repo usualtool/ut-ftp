@@ -1,39 +1,43 @@
 <?php
-require_once dirname(__FILE__).'/'.'autoload.php';
-use library\UsualToolInc\UTInc;
 use usualtool\Ftp\Ftp;
-$ftp=new Ftp();
-if(!empty($_GET["ch"])):
-    $ch=$_GET["ch"];
-else:
-    $ch="/.";
-endif;
-if($_GET["do"]=="del"):
+$ftp = new Ftp();
+$ch = urldecode($_GET["ch"]) ?? ".";
+if($_GET["do"] == "del"):
     if($ftp->Del($_GET["chs"])):
-        echo"删除成功";
+        echo "删除成功";
     else:
-        echo"删除失败";
+        echo "删除失败";
     endif;
 endif;
-echo"FTP file list demo<br/>";
-$data=$ftp->List($ch);
+echo "FTP file list demo<br/>";
+$data = $ftp->List($ch);
+if(!is_array($data)):
+    echo $ch;
+    die("无法读取目录内容");
+endif;
 asort($data);
-echo"<table style='width:50%;border:1px solid #ddd;'>";
-foreach($data as $key=>$val):
-    if($val!="/."):
-        $val=str_replace($ch,"",$val);
-        $size=$ftp->Size($val);
-        echo"<tr>";
-        if($size=="-1"):
-            echo"<td><a href='?ch=".$val."'>".$val."</a></td>";
-            echo"<td>---</td>";
-            echo"<td></td>";
-        else:
-            echo"<td>".$val."</td>";
-            echo"<td>".$ftp->Size($val)." B</td>";
-            echo"<td><a href='?do=del&chs=".$ch.$val."'>删除</a></td>";
-        endif;
-        echo"</tr>";
+echo "<table style='width:50%;border:1px solid #ddd;'>";
+foreach($data as $val):
+    if($val === '.' || $val === '..' || $val === '/.' || $val === '/..'):
+        continue;
     endif;
+    $name = basename($val);
+    if($ch === '.'):
+        $full_path = $name;
+    else:
+        $full_path = rtrim($ch, '/') . '/' . $name;
+    endif;
+    $size = $ftp->Size($full_path);
+    echo "<tr>";
+    if($size == -1):
+        echo "<td><a href='?p=test&ch=" . urlencode($full_path) . "'>" . htmlspecialchars($name) . "</a></td>";
+        echo "<td>---</td>";
+        echo "<td></td>";
+    else:
+        echo "<td>" . htmlspecialchars($name) . "</td>";
+        echo "<td>" . $size . " B</td>";
+        echo "<td><a href='?do=del&chs=" . urlencode($full_path) . "'>删除</a></td>";
+    endif;
+    echo "</tr>";
 endforeach;
-echo"</table>";
+echo "</table>";
