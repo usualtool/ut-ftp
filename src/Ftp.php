@@ -1,7 +1,7 @@
 <?php
 namespace usualtool\Ftp;
 class Ftp{
-    function __construct($server='',$port='',$username='',$password='',$pasv=''){
+    public function __construct($server='',$port='',$username='',$password='',$pasv=''){
         if(empty($server)):
             include 'Config.php';
             $this->server=$config["server"];
@@ -16,39 +16,40 @@ class Ftp{
             $this->password=$password;
             $this->pasv=$pasv;
         endif;
-        $this->ftp=@ftp_connect($this->server,$this->port) or die("FTP CONNECT ERROR");
-        @ftp_login($this->ftp,$this->username,$this->password) or die("FTP LOGIN ERROR");
+        $this->ftp=ftp_connect($this->server,$this->port,10) or die("FTP CONNECT ERROR");
+        ftp_login($this->ftp,$this->username,$this->password) or die("FTP LOGIN ERROR");
+        ftp_pasv($this->ftp, $this->pasv);
     }
     /**
     * FTP当前位置
     */
-    function Cur(){
+    public function Cur(){
         return ftp_pwd($this->ftp);
     }
     /**
     * 返回FTP父目录
     */
-    function Par(){
+    public function Par(){
         return ftp_cdup($this->ftp);
     }
     /**
     * FTP文件列表
     */
-    function List($path='/'){
+    public function List($path='/'){
         $data=ftp_nlist($this->ftp,$path);
         return $data;
     }
     /**
     * FTP详细列表
     */
-    function RawList($path='/'){
+    public function RawList($path='/'){
         $data=ftp_rawlist($this->ftp,$path);
         return $data;
     }
     /**
     * 当前（本地）上传到FTP
     */
-    function Upload($local,$server){
+    public function Upload($local,$server){
         $this->MakeDir(dirname($server));
         if (!file_exists($local)){
              return false;
@@ -60,7 +61,7 @@ class Ftp{
     /**
     * FTP下载到本地
     */
-    function Download($local,$server){
+    public function Download($local,$server){
         $result = ftp_get($this->ftp,$local,$server,FTP_BINARY);
         $this->Close();
         return $result;
@@ -68,7 +69,7 @@ class Ftp{
     /**
     * FTP重命名或移动
     */
-    function Rename($old,$new){ 
+    public function Rename($old,$new){ 
         $this->MakeDir($new); 
         $res = @ftp_rename($this->ftp,$old,$new);
         $this->Close();
@@ -81,7 +82,7 @@ class Ftp{
     /**
     * FTP删除文件
     */
-    function Del($file) { 
+    public function Del($file) { 
         $res = @ftp_delete($this->ftp,$file); 
         if(!$res):
             return false;
@@ -92,7 +93,7 @@ class Ftp{
     /**
     * FTP创建目录
     */
-    function MakeDir($path){
+    public function MakeDir($path){
         $path_arr = explode('/',$path);
         $file_name = array_pop($path_arr);
         $path_div = count($path_arr);
@@ -113,7 +114,7 @@ class Ftp{
     /**
     * FTP文件大小
     */
-    function Size($file) { 
+    public function Size($file) { 
         $res = @ftp_size($this->ftp,$file); 
         if(!$res):
             return false;
