@@ -3,7 +3,7 @@ namespace usualtool\Ftp;
 class Ftp{
     public function __construct($server='',$port='',$username='',$password='',$pasv=''){
         if(empty($server)):
-            include 'Config.php';
+            include __DIR__ . '/Config.php';
             $this->server=$config["server"];
             $this->port=$config["port"];
             $this->username=$config["username"];
@@ -54,8 +54,7 @@ class Ftp{
         if (!file_exists($local)){
              return false;
         }
-        $result = ftp_put($this->ftp,$server,$local,FTP_BINARY);//FTP_ASCII
-        $this->Close();
+        $result = ftp_put($this->ftp,$server,$local,FTP_BINARY);
         return (!$result) ? false : true;
     }
     /**
@@ -63,7 +62,6 @@ class Ftp{
     */
     public function Download($local,$server){
         $result = ftp_get($this->ftp,$local,$server,FTP_BINARY);
-        $this->Close();
         return $result;
     }
     /**
@@ -72,7 +70,6 @@ class Ftp{
     public function Rename($old,$new){ 
         $this->MakeDir($new); 
         $res = @ftp_rename($this->ftp,$old,$new);
-        $this->Close();
         if(!$res):
             return false;
         else:
@@ -127,5 +124,11 @@ class Ftp{
     */
     public function Close(){
         ftp_quit($this->ftp); 
+    }
+    /**
+     * 析构函数：自动关闭连接
+     */
+    public function __destruct(){
+        $this->Close();
     }
 }
