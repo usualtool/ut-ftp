@@ -8,17 +8,19 @@ class Ftp{
             $this->port=$config["port"];
             $this->username=$config["username"];
             $this->password=$config["password"];
-            $this->pasv=$config["pasv"];
+            $this->pasv=(bool)$config["pasv"];
         else:
             $this->server=$server;
             $this->port=$port;
             $this->username=$username;
             $this->password=$password;
-            $this->pasv=$pasv;
+            $this->pasv=(bool)$pasv;
         endif;
-        $this->ftp=ftp_connect($this->server,$this->port,10) or die("FTP CONNECT ERROR");
-        ftp_login($this->ftp,$this->username,$this->password) or die("FTP LOGIN ERROR");
-        ftp_pasv($this->ftp, $this->pasv);
+        $this->ftp=ftp_connect($this->server,$this->port,10) or die("FTP CONNECT ERROR\r\n");
+        ftp_login($this->ftp,$this->username,$this->password) or die("FTP LOGIN ERROR\r\n");
+        if(!ftp_pasv($this->ftp,$this->pasv)):
+            die("无法启用被动模式\r\n");
+        endif;
     }
     /**
     * FTP当前位置
@@ -49,14 +51,25 @@ class Ftp{
     /**
     * 当前（本地）上传到FTP
     */
-    public function Upload($local,$server){
-        $this->MakeDir(dirname($server));
-        if (!file_exists($local)){
-             return false;
-        }
-        $result = ftp_put($this->ftp,$server,$local,FTP_BINARY);
-        return (!$result) ? false : true;
-    }
+	public function Upload($local, $server){
+		$dir = dirname($server);
+		if(!$this->MakeDir($dir)):
+			return false;
+		endif;
+		$local = realpath($local);
+		if(!$local || !file_exists($local)):
+			return false;
+		endif;
+		if(!ftp_pasv($this->ftp, $this->pasv)):
+			return false;
+		endif;
+		$result = ftp_put($this->ftp, $server, $local, FTP_BINARY);
+		if($result):
+			return true;
+		else:
+			return false;
+		endif;
+	}
     /**
     * FTP下载到本地
     */
@@ -90,28 +103,34 @@ class Ftp{
     /**
     * FTP创建目录
     */
-    public function MakeDir($path){
-        $path_arr = explode('/',$path);
-        $file_name = array_pop($path_arr);
-        $path_div = count($path_arr);
-        foreach($path_arr as $val){
-            if(@ftp_chdir($this->ftp,$val) == FALSE){
-                $tmp = @ftp_mkdir($this->ftp,$val);
-                if($tmp == FALSE){
-                    throw new \Exception("Dir Error");
-                    exit;
-                }
-                @ftp_chdir($this->ftp,$val);
-            }
-        }
-        for($i=1;$i=$path_div;$i++){
-            @ftp_cdup($this->ftp);
-        }
-    }
+	public function MakeDir($path){
+		if(empty($path) || $path === '/' || $path === '.'):
+			return true;
+		endif;
+		$dirs = array_filter(explode('/', trim($path, '/')));
+		if(empty($dirs)):
+			return true;
+		endif;
+		$originalPwd = ftp_pwd($this->ftp);
+		foreach($dirs as $dir):
+			if(!@ftp_chdir($this->ftp, $dir)):
+				if(!@ftp_mkdir($this->ftp, $dir)):
+					@ftp_chdir($this->ftp, $originalPwd);
+					return false;
+				endif;
+				if (!@ftp_chdir($this->ftp, $dir)):
+					@ftp_chdir($this->ftp, $originalPwd);
+					return false;
+				endif;
+			endif;
+		endforeach;
+		@ftp_chdir($this->ftp, $originalPwd);
+		return true;
+	}
     /**
     * FTP文件大小
     */
-    public function Size($file) { 
+    public function Size($file){ 
         $res = @ftp_size($this->ftp,$file); 
         if(!$res):
             return false;
