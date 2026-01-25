@@ -1,6 +1,6 @@
 {
     "name":             "usualtool/ut-ftp",
-    "description":      "UT framework extension:Ftp.",
+    "description":      "UT Framework Extension:Ftp.",
     "keywords":         ["ut-ftp", "usualtool", "UT Framework"],
     "homepage":         "https://github.com/usualtool",
     "license": "Apache-2.0",
